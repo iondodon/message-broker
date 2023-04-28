@@ -16,12 +16,12 @@ defmodule EventListener do
 
   # this function is used to fix a format issue in the xml data string
   # but already not needed since the docker image was updated
-#  def fix_xml(xml) do
-#    xml = String.replace(xml, "us=", "us='")
-#    [{index, length}] = Regex.run(~r{[0-9]>}, xml, return: :index)
-#    {head, tail} = String.split_at(xml, index + length - 1)
-#    head <> "'" <> tail
-#  end
+  def fix_xml(xml) do
+    xml = String.replace(xml, "us=", "us='")
+    [{index, length}] = Regex.run(~r{[0-9]>}, xml, return: :index)
+    {head, tail} = String.split_at(xml, index + length - 1)
+    head <> "'" <> tail
+  end
 
 
   def convert_data(supervisor_pid, new_event) do

@@ -1,9 +1,9 @@
-defmodule SensorsServer.MixProject do
+defmodule RtpServer.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :sensors_server,
+      app: :rtp_server,
       version: "0.1.0",
       elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
@@ -15,7 +15,7 @@ defmodule SensorsServer.MixProject do
   def application do
     [
       extra_applications: [:logger],
-      mod: {SensorsServer.Application, []}
+      mod: {RtpServer.Application, []}
     ]
   end
 
@@ -24,8 +24,8 @@ defmodule SensorsServer.MixProject do
     [
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
-      {:plug_cowboy, "~> 2.0"},
-      {:poison, "~> 2.2"}
+      {:plug_cowboy, "== 2.0.0"},
+      {:poison, "== 2.2.0"}
     ]
   end
 end

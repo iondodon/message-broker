@@ -3,7 +3,7 @@ defmodule MessageBrokerApp do
 
   # the app (message broker) starts from here
   def start(_type, _args) do
-    # start a bew process
+    # start a new process
     BrokerSupervisor.start_link()
   end
 

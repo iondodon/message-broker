@@ -1,4 +1,4 @@
-defmodule SensorsServer.Sse do
+defmodule RtpServer.Sse do
   @moduledoc """
   TODO: Ruleset for weather
 
@@ -28,7 +28,7 @@ defmodule SensorsServer.Sse do
                         :athm_pressure_sensor_mmhg,
                         :light_sensor_analog,
                         :unix_timestamp_us],
-          general_description: "To start streaming data, access the /iot route. Data is in SSE/EventSource format.",
+          general_description: "To start streaming data, access the /iot, /sensors and /legacy_sensors routes. Data is in SSE/EventSource format. Sensor readings are sharded among the 3 routes, approximate join them on the timestamp field, +- 2 (100 usec).",
           the_weather_forecast_rules: [
               "if temperature < -2 and light < 128 and athm_pressure < 720 then SNOW",
               "if temperature < -2 and light > 128 and athm_pressure < 680 then WET_SNOW",
@@ -50,47 +50,66 @@ defmodule SensorsServer.Sse do
 
 
   get "/iot" do
-      Logger.info "Start connection"
+    Logger.info "Start connection on /iot"
 
-      conn = put_resp_header(conn, "content-type", "text/event-stream")
-      conn = send_chunked(conn, 200)
+    conn = put_resp_header(conn, "content-type", "text/event-stream")
+    conn = send_chunked(conn, 200)
 
-      time_scale = 5
+    time_scale = 5
 
-      stream_loop(conn, time_scale)
+    stream_loop(conn, time_scale, fn -> RtpServer.Messages.make_message_type_one end)
 
-      conn
+    conn
+  end
+
+  get "/sensors" do
+    Logger.info "Start connection on /sensors"
+
+    conn = put_resp_header(conn, "content-type", "text/event-stream")
+    conn = send_chunked(conn, 200)
+
+    time_scale = 5
+
+    stream_loop(conn, time_scale, fn -> RtpServer.Messages.make_message_type_two end)
+
+    conn
+  end
+
+  get "/legacy_sensors" do
+    Logger.info "Start connection on /legacy_sensors"
+
+    conn = put_resp_header(conn, "content-type", "text/event-stream")
+    conn = send_chunked(conn, 200)
+
+    time_scale = 5
+
+    stream_loop(conn, time_scale, fn -> RtpServer.Messages.make_message_type_three end)
+
+    conn
   end
 
   get "/help" do
-      Logger.info "Start connection"
+    Logger.info "Start connection"
 
-      conn
-      |> put_resp_header("content-type", "application/json")
-      |> send_resp(200, Poison.encode!(@help))
-
-      conn
+    conn
+    |> put_resp_header("content-type", "application/json")
+    |> send_resp(200, Poison.encode!(@help))
   end
-
-  def make_message() do
-      "{\"temperature_sensor_1\": #{:random.uniform * 60 - 20},\"temperature_sensor_2\": #{:random.uniform * 60 - 20},\"humidity_sensor_1\": #{:random.uniform * 100},\"humidity_sensor_2\": #{:random.uniform * 100},\"wind_speed_sensor_1\": #{:random.uniform * 50},\"wind_speed_sensor_2\": #{:random.uniform * 50},\"atmo_pressure_sensor_1\": #{:random.uniform * 200 + 600},\"atmo_pressure_sensor_2\": #{:random.uniform * 200 + 600},\"light_sensor_1\": #{Float.round(:random.uniform * 256)},\"light_sensor_2\": #{Float.round(:random.uniform * 256)},\"unix_timestamp_us\": #{DateTime.to_unix DateTime.utc_now, :microsecond}}"
-  end
-
 
   defp sse_send_message(conn, message) do
-      chunk(conn, "event: \"message\"\n\ndata: {\"message\": #{message}}\n\n")
+    chunk(conn, "event: \"message\"\n\ndata: {\"message\": #{message}}\n\n")
   end
 
 
-  defp stream_loop(conn, scale) do
-      msecs = round(@lambda * :math.exp(- @lambda * :random.uniform) * scale)
+  defp stream_loop(conn, scale, msg_maker) when is_function(msg_maker, 0) do
+    msecs = round(@lambda * :math.exp(- @lambda * :random.uniform) * scale)
 
-      for _ <- 1..100 do
-          msg = if :random.uniform > @panic_prob, do: make_message(), else: "panic"
-          sse_send_message(conn, msg)
-          :timer.sleep(msecs)
-      end
+    for _ <- 1..100 do
+      msg = if :random.uniform > @panic_prob, do: msg_maker.(), else: "panic"
+      sse_send_message(conn, msg)
+      :timer.sleep(msecs)
+    end
 
-      stream_loop(conn, scale)
+    stream_loop(conn, scale, msg_maker)
   end
 end
