@@ -81,7 +81,7 @@ defmodule EventListener do
 
 
   def run(arg) do
-    # start listeninf for ecents from all three sources
+    # start listening for events from all three sources
     {:ok, pid} = EventsourceEx.new("http://localhost:4000/iot", stream_to: self())
     {:ok, pid} = EventsourceEx.new("http://localhost:4000/sensors", stream_to: self())
     {:ok, pid} = EventsourceEx.new("http://localhost:4000/legacy_sensors", stream_to: self())
