@@ -15,6 +15,9 @@ defmodule BrokerListener do
     # define the socket which will be used for communication and let it be the state of the GenServer
     # the GenServer is a module that has many handy methods, in special when working with sockets
     socket = :gen_udp.open(@joiner_subscriber_port, [:binary, active: true])
+    IO.inspect("Successsful UDP connection to the Message Broker")
+    IO.inspect("Message broker port: #{@broker_port}")
+    IO.inspect("Subscriber port: #{@joiner_subscriber_port}")
     socket
   end
 
@@ -41,14 +44,18 @@ defmodule BrokerListener do
   def subscribe(topic) do
     socket = :sys.get_state(BrokerListener)
     message = %{:action => "subscribe", :topic => topic, :subscriber_port => @joiner_subscriber_port}
+    IO.inspect("Subscribing to the broker for topic #{topic}...")
     :gen_udp.send(socket, {127,0,0,1}, @broker_port, Poison.encode!(message))
+    IO.inspect("Successful subscription to the broker for topic #{topic}")
   end
 
   # send an unsubscribe message to the broker
   def unsubscribe(topic) do
     socket = :sys.get_state(BrokerListener)
     message = %{:action => "unsubscribe", :topic => topic, :subscriber_port => @joiner_subscriber_port}
+    IO.inspect("Sending unsubscribe request for top #{topic}...")
     :gen_udp.send(socket, {127,0,0,1}, @broker_port, Poison.encode!(message))
+    IO.inspect("Successfully unsubscriber from topic #{topic}")
   end
 
 end
